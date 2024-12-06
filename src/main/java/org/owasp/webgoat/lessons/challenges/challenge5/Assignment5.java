@@ -47,6 +47,7 @@ public class Assignment5 implements AssignmentEndpoint {
   private final LessonDataSource dataSource;
   private final Flags flags;
 
+  // Updated 20241206 ML - Employed prepared statement to sanitize inputs to vuln function.  
   @PostMapping("/challenge/5")
   @ResponseBody
   public AttackResult login(
@@ -58,13 +59,11 @@ public class Assignment5 implements AssignmentEndpoint {
       return failed(this).feedback("user.not.larry").feedbackArgs(username_login).build();
     }
     try (var connection = dataSource.getConnection()) {
-      PreparedStatement statement =
-          connection.prepareStatement(
-              "select password from challenge_users where userid = '"
-                  + username_login
-                  + "' and password = '"
-                  + password_login
-                  + "'");
+      String query = "select password from challenge_users where userid = ? and password = ?";
+      PreparedStatement statement = connection.prepareStatement(query);
+      statement.setString(1, username_login);
+      statement.setString(2, password_login);
+      
       ResultSet resultSet = statement.executeQuery();
 
       if (resultSet.next()) {
